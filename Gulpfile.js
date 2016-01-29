@@ -9,7 +9,10 @@ var gulp = require('gulp'),
     autoprefixer = require('gulp-autoprefixer'),
     uglify = require('gulp-uglify'),
     source = require('vinyl-source-stream'),
-    buffer = require('vinyl-buffer');
+    buffer = require('vinyl-buffer'),
+    rename = require('gulp-rename'),
+    minifycss = require('gulp-minify-css'),
+    spriter = require('gulp-css-spriter');
 
 // Modules for webserver and livereload
 var express = require('express'),
@@ -30,11 +33,11 @@ server.all('/*', function(req, res) {
 });
 
 // Dev task
-gulp.task('dev', ['clean', 'views', 'styles', 'lint', 'browserify'], function() { });
+gulp.task('dev', ['clean', 'views', 'styles', 'sprite' , 'lint', 'browserify'], function() { });
 
 // Clean task
 gulp.task('clean', function() {
-	gulp.src('./dist/views', { read: false }) // much faster
+	gulp.src('dist/views', { read: false }) // much faster
   .pipe(rimraf({force: true}));
 });
 
@@ -53,18 +56,29 @@ gulp.task('styles', function() {
   // Optionally add autoprefixer
   .pipe(autoprefixer('last 2 versions', '> 1%', 'ie 8'))
   // These last two should look familiar now :)
-  .pipe(gulp.dest('dist/css/'));
+  .pipe(gulp.dest('app/styles/'));
+});
+
+gulp.task('sprite',function() {
+    var timestamp = +new Date();
+    //需要自动合并雪碧图的样式文件
+    gulp.src('app/styles/*.css')
+        .pipe(spriter({
+            // 生成的spriter的位置
+            'spriteSheet': 'dist/images/sprite'+timestamp+'.png',
+            // 生成样式文件图片引用地址的路径
+            // 如下将生产：backgound:url(../images/sprite20324232.png)
+            'pathToSpriteSheetFromCSS': '../images/sprite'+timestamp+'.png'
+        }))
+        .pipe(gulp.dest('dist/css'))
+        .pipe(rename({suffix: '.min'}))
+        .pipe(minifycss())
+        //产出路径
+        .pipe(gulp.dest('dist/css'));
 });
 
 // Browserify task
 gulp.task('browserify', function() {
-  // gulp.src(['app/scripts/main.js'])
-  // .pipe(browserify({
-  //   insertGlobals: true,
-  //   debug: false
-  // }))
-  // .pipe(concat('bundle.js'))
-  // .pipe(gulp.dest('dist/js'));
   return browserify('app/scripts/main.js')
       .bundle()
       .pipe(source('bundle.js')) // gives streaming vinyl file object
@@ -101,7 +115,9 @@ gulp.task('watch', ['lint'], function() {
   gulp.watch(['app/styles/**/*.scss'], [
     'styles'
   ]);
-
+  gulp.watch(['app/styles/**/*.css'], [
+    'sprite'
+  ]);
   gulp.watch(['app/**/*.html'], [
     'views'
   ]);
