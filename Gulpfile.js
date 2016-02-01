@@ -17,7 +17,8 @@ var gulp = require('gulp'),
     gulpif = require('gulp-if'),
     changed = require('gulp-changed'),
     minifyHtml = require('gulp-minify-html'),
-     clean = require('gulp-clean'),
+    clean = require('gulp-clean'),
+    csslint = require('gulp-csslint'),
     revCollector = require('gulp-rev-collector');
 
 // Modules for webserver and livereload
@@ -28,84 +29,84 @@ var express = require('express'),
     serverport = 5000;
 
 
-var cssSrc = ['main.scss', 'user.scss'],
-    cssDest = 'dist/css',
-    jsSrc = 'src/js/*.js',
-    jsDest = 'dist/js',
-    imgSrc = 'src/img/*',
-    imgDest = 'dist/image',
-    cssRevSrc = 'src/css/revCss',
-    condition = true;
-function changePath(basePath){
-  var nowCssSrc = [];
-  for (var i = 0; i < cssSrc.length; i++) {
-    nowCssSrc.push(cssRevSrc + '/' + cssSrc[i]);
-  }
-  return nowCssSrc;
-}
+
+    var cssSrc = 'cache/css/*.css',
+        cssDest = 'dist/css',
+        jsSrc = 'cache/js/*.js',
+        jsDest = 'dist/js',
+        imgSrc = 'cache/images/*.png',
+        imgDest = 'dist/images',
+        cssRevSrc = 'cache/css/*.css',
+        condition = true;
 
 
-//Fonts & Images 根据MD5获取版本号
-gulp.task('revImg', function(){
-    return gulp.src(imgSrc)
-        .pipe(rev())
-        .pipe(gulp.dest(imgDest))
-        .pipe(rev.manifest())
-        .pipe(gulp.dest('src/rev/img'));
-});
 
+    //Fonts & Images 根据MD5获取版本号
+    gulp.task('revImg', function(){
+      return  gulp.src(imgSrc)
+            .pipe(rev())
+            .pipe(gulp.dest(imgDest))
+            .pipe(rev.manifest())
+            .pipe(gulp.dest('cache/rev/images'));
+    });
 
-//压缩JS/生成版本号
-gulp.task('miniJs', function(){
-    gulp.src('cache/js/*.js')
-        .pipe(gulpif(
-            condition, uglify()
-        ))
-        .pipe(rev())
-        .pipe(gulp.dest('dist/js'))
-        .pipe(rev.manifest())
-        .pipe(gulp.dest('dist/rev/js'));
-});
+    //压缩JS/生成版本号
+    gulp.task('miniJs', function(){
+      return  gulp.src(jsSrc)
+            .pipe(gulpif(
+                condition, uglify()
+            ))
+            .pipe(rev())
+            .pipe(gulp.dest(jsDest))
+            .pipe(rev.manifest())
+            .pipe(gulp.dest('cache/rev/js'));
+    });
 
-//CSS里更新引入文件版本号
-gulp.task('revCollectorCss', function () {
-    return gulp.src(['src/rev/**/*.json', 'src/css/*.less'])
-        .pipe(revCollector())
-        .pipe(gulp.dest(cssRevSrc));
-});
+    //CSS里更新引入文件版本号
+    gulp.task('revCollectorCss', function () {
+     return   gulp.src(['cache/rev/**/*.json', 'dist/css/*.css'])
+            .pipe(revCollector())
+            .pipe(gulp.dest('dist/css'));
+    });
 
+    //压缩/合并CSS/生成版本号
+    gulp.task('miniCss', function(){
+      return  gulp.src(cssRevSrc)
+            .pipe(rev())
+            .pipe(gulpif(
+                    condition, changed(cssDest)
+            ))
+            .pipe(autoprefixer({
+                browsers: ['last 2 versions'],
+                cascade: false,
+                remove: false       
+            }))
+            .pipe(gulp.dest(cssDest))
+            .pipe(rev.manifest())
+            .pipe(gulp.dest('cache/rev/css'));
+    });
 
-//压缩/合并CSS/生成版本号
-gulp.task('miniCss', function(){
-    return gulp.src(changePath(cssRevSrc))
-        
-        .pipe(rev())
-        .pipe(gulpif(
-                condition, changed(cssDest)
-        ))
-        .pipe(autoprefixer({
-            browsers: ['last 2 versions'],
-            cascade: false,
-            remove: false       
-        }))
-        .pipe(gulp.dest(cssDest))
-        .pipe(rev.manifest())
-        .pipe(gulp.dest('src/rev/css'));
-});
+    //压缩Html/更新引入文件版本
+    gulp.task('miniHtml', function () {
+      return  gulp.src(['cache/rev/**/*.json', 'cache/*.html'])
+            .pipe(revCollector())
+            .pipe(gulpif(
+                condition, minifyHtml({
+                    empty: true,
+                    spare: true,
+                    quotes: true
+                })
+            ))
+            .pipe(gulp.dest('dist'));
+    });
 
-//压缩Html/更新引入文件版本
-gulp.task('miniHtml', function () {
-    return gulp.src(['dist/rev/**/*.json', 'dist/*.html'])
-        .pipe(revCollector())
-        .pipe(gulpif(
-            condition, minifyHtml({
-                empty: true,
-                spare: true,
-                quotes: true
-            })
-        ))
-        .pipe(gulp.dest('dist'));
-});
+   //img里更新引入文件版本号
+    gulp.task('revCollectorImg', function () {
+     return   gulp.src(['cache/rev/**/*.json', 'dist/images/*.png'])
+            .pipe(revCollector())
+            .pipe(gulp.dest('dist/images'));
+    });
+
 
 
 
@@ -121,18 +122,28 @@ server.all('/*', function(req, res) {
   res.sendfile('index.html', { root: 'dist' });
 });
 
-// Dev task
+// Dev task  开发构建
 gulp.task('dev', ['clean', 'views', 'styles' , 'lint', 'browserify'], function() { 
- gulp.start('sprite','miniJs');
-
+ gulp.start('sprite');
+  });
+// build  正式构建
+gulp.task('build', ['cleandist'], function() { 
+   gulp.start( 'revImg', 'revCollectorCss', 'miniCss' , 'miniJs', 'miniHtml');
   });
 
 
 // Clean task
 gulp.task('clean', function() {
-	gulp.src(['cache' , 'dist'], {read: false})
+	gulp.src(['cache'], {read: false})
     .pipe(clean());
 });
+
+// Clean dist
+gulp.task('cleandist', function() {
+ return gulp.src(['dist'], {read: false})
+    .pipe(clean());
+});
+
 
 // JSHint task
 gulp.task('lint', function() {
@@ -153,21 +164,21 @@ gulp.task('styles', function() {
 });
 
 gulp.task('sprite',function() {
-   var timestamp = +new Date();
+ //  var timestamp = +new Date();
     //需要自动合并雪碧图的样式文件
   return  gulp.src('app/styles/*.css')
         .pipe(spriter({
             // 生成的spriter的位置
-            'spriteSheet': 'dist/images/sprite'+timestamp+'.png',
+            'spriteSheet': 'cache/images/sprite.png',
             // 生成样式文件图片引用地址的路径
             // 如下将生产：backgound:url(../images/sprite20324232.png)
-            'pathToSpriteSheetFromCSS': '../images/sprite'+timestamp+'.png'
+            'pathToSpriteSheetFromCSS': '../images/sprite.png'
         }))
-        .pipe(gulp.dest('dist/css'))
-        .pipe(rename({suffix: '.min'}))
-        .pipe(minifycss())
-        //产出路径
-        .pipe(gulp.dest('dist/css'));
+        .pipe(gulp.dest('cache/css'));
+        // .pipe(rename({suffix: '.min'}))
+        // .pipe(minifycss())
+        // //产出路径
+        // .pipe(gulp.dest('cache/css'));
 });
 
 // Browserify task
@@ -184,13 +195,13 @@ gulp.task('browserify', function() {
 gulp.task('views', function() {
   // Get our index.html
   gulp.src('app/index.html')
-  // And put it in the dist folder
-  .pipe(gulp.dest('dist/'));
+  // And put it in the cache folder
+  .pipe(gulp.dest('cache/'));
 
   // Any other view files from app/views
   gulp.src('app/views/**/*')
-  // Will be put in the dist/views folder
-  .pipe(gulp.dest('dist/views/'));
+  // Will be put in the cache/views folder
+  .pipe(gulp.dest('cache/views/'));
 });
 
 gulp.task('watch', ['lint'], function() {
