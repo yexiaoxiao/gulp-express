@@ -62,9 +62,9 @@ var express = require('express'),
             .pipe(gulp.dest('cache/rev/js'));
     });
 
-    //CSS里更新引入文件版本号
+   // CSS里更新引入文件版本号
     gulp.task('revCollectorCss', function () {
-     return   gulp.src(['cache/rev/**/*.json', 'dist/css/*.css'])
+     return   gulp.src(['cache/rev/**/*.json', 'cache/css/*.css'])
             .pipe(revCollector())
             .pipe(gulp.dest('dist/css'));
     });
@@ -100,12 +100,12 @@ var express = require('express'),
             .pipe(gulp.dest('dist'));
     });
 
-   //img里更新引入文件版本号
-    gulp.task('revCollectorImg', function () {
-     return   gulp.src(['cache/rev/**/*.json', 'dist/images/*.png'])
-            .pipe(revCollector())
-            .pipe(gulp.dest('dist/images'));
-    });
+   // //img里更新引入文件版本号
+   //  gulp.task('revCollectorImg', function () {
+   //   return   gulp.src(['cache/rev/**/*.json', 'dist/images/*.png'])
+   //          .pipe(revCollector())
+   //          .pipe(gulp.dest('dist/images'));
+   //  });
 
 
 
@@ -128,7 +128,7 @@ gulp.task('dev', ['clean', 'views', 'styles' , 'lint', 'browserify'], function()
   });
 // build  正式构建
 gulp.task('build', ['cleandist'], function() { 
-   gulp.start( 'revImg', 'revCollectorCss', 'miniCss' , 'miniJs', 'miniHtml');
+   gulp.start( 'revImg', 'revCollectorCss' ,'miniCss' , 'miniJs', 'miniHtml');
   });
 
 
