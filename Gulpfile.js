@@ -19,6 +19,7 @@ var gulp = require('gulp'),
     minifyHtml = require('gulp-minify-html'),
     clean = require('gulp-clean'),
     csslint = require('gulp-csslint'),
+    imagemin = require('gulp-imagemin'),
     revCollector = require('gulp-rev-collector');
 
 // Modules for webserver and livereload
@@ -34,7 +35,7 @@ var express = require('express'),
         cssDest = 'dist/css',
         jsSrc = 'cache/js/*.js',
         jsDest = 'dist/js',
-        imgSrc = 'cache/images/*.png',
+        imgSrc = 'cache/images/*.{png,jpg,gif,ico}',
         imgDest = 'dist/images',
         cssRevSrc = 'cache/css/*.css',
         condition = true;
@@ -88,7 +89,7 @@ var express = require('express'),
 
     //压缩Html/更新引入文件版本
     gulp.task('miniHtml', function () {
-      return  gulp.src(['cache/rev/**/*.json', 'cache/*.html'])
+      return  gulp.src(['cache/rev/**/*.json', 'cache/**/*.html'])
             .pipe(revCollector())
             .pipe(gulpif(
                 condition, minifyHtml({
@@ -100,12 +101,7 @@ var express = require('express'),
             .pipe(gulp.dest('dist'));
     });
 
-   // //img里更新引入文件版本号
-   //  gulp.task('revCollectorImg', function () {
-   //   return   gulp.src(['cache/rev/**/*.json', 'dist/images/*.png'])
-   //          .pipe(revCollector())
-   //          .pipe(gulp.dest('dist/images'));
-   //  });
+   
 
 
 
@@ -123,8 +119,8 @@ server.all('/*', function(req, res) {
 });
 
 // Dev task  开发构建
-gulp.task('dev', ['clean', 'views', 'styles' , 'lint', 'browserify'], function() { 
- gulp.start('sprite');
+gulp.task('dev', ['clean', 'minImages', 'styles' , 'lint', 'browserify'], function() { 
+ gulp.start('views','sprite');
   });
 // build  正式构建
 gulp.task('build', ['cleandist'], function() { 
@@ -134,7 +130,7 @@ gulp.task('build', ['cleandist'], function() {
 
 // Clean task
 gulp.task('clean', function() {
-return	gulp.src(['cache'], {read: false})
+return	gulp.src(['cache/css','cache/images', 'cache/js', 'cache/views' ], {read: false})
     .pipe(clean());
 });
 
@@ -154,7 +150,7 @@ gulp.task('lint', function() {
 
 // Styles task
 gulp.task('styles', function() {
- return  gulp.src('app/styles/*.scss')
+  gulp.src('app/styles/*.scss')
   // The onerror handler prevents Gulp from crashing when you make a mistake in your SASS
   .pipe(sass({onError: function(e) { console.log(e); } }))
   // Optionally add autoprefixer
@@ -166,7 +162,7 @@ gulp.task('styles', function() {
 gulp.task('sprite',function() {
  //  var timestamp = +new Date();
     //需要自动合并雪碧图的样式文件
-  return  gulp.src('app/styles/*.css')
+    gulp.src('app/styles/*.css')
         .pipe(spriter({
             // 生成的spriter的位置
             'spriteSheet': 'cache/images/sprite.png',
@@ -183,7 +179,7 @@ gulp.task('sprite',function() {
 
 // Browserify task
 gulp.task('browserify', function() {
- return  browserify('app/scripts/main.js')
+  browserify('app/scripts/main.js')
       .bundle()
       .pipe(source('bundle.js')) // gives streaming vinyl file object
       .pipe(buffer()) // <----- convert from streaming to buffered vinyl file object
@@ -203,6 +199,14 @@ gulp.task('views', function() {
   // Will be put in the cache/views folder
   .pipe(gulp.dest('cache/views/'));
 });
+
+//图片压缩
+    gulp.task('minImages', function () {
+     gulp.src('app/images/**/*.{png,jpg,gif,ico}')
+      .pipe(imagemin({ optimizationLevel: 3, progressive: true, interlaced: true }))
+      .pipe(gulp.dest('cache/images'));
+   
+    });
 
 gulp.task('watch', ['lint'], function() {
   // Start webserver

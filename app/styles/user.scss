@@ -15,9 +15,18 @@ body {
 }
 
 .user_refresh_s{
-	background: url(../images/i_refresh_s.png);
+	background: url(../images/i_refresh_s.png?__spriter);
 }
 
 .user_right{
-	background: url(../images/i_right.png);
+	background: url(../images/i_right.png?__spriter);
+}
+
+h3{
+	color: red;
+	font-size: 50px;
+}
+
+img{
+	display: block;
 }

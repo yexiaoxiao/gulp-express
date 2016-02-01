@@ -5,13 +5,13 @@ body {
     color: #333333; }
 
 .i_alarm {
-  background: url(../images/i_alarm.png); }
+  background: url(../images/i_alarm.png?__spriter); }
 
 .i_close_red {
-  background: url(../images/i_close_red.png); }
+  background: url(../images/i_close_red.png?__spriter); }
 
 .i_refresh_s {
   background: url(../images/i_refresh_s.png); }
 
 .i_right {
-  background: url(../images/i_right.png); }
+  background: url(../images/i_right.png?__spriter); }
