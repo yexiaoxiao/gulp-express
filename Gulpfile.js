@@ -134,7 +134,7 @@ gulp.task('build', ['cleandist'], function() {
 
 // Clean task
 gulp.task('clean', function() {
-	gulp.src(['cache'], {read: false})
+return	gulp.src(['cache'], {read: false})
     .pipe(clean());
 });
 
